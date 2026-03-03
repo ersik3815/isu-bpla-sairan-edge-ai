@@ -1,0 +1,27 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Башня A",
+        "height": 45
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.8580, 43.2290]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Башня B",
+        "height": 38
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.8540, 43.2330]
+      }
+    }
+  ]
+}

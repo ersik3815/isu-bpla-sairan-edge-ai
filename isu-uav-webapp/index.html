@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ИСУ БПЛА</title>
+  <!-- External libraries -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Project styles -->
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+  <div class="layout">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="tl">
+        <div class="live"></div>
+        <div class="logo">ИСУ БПЛА</div>
+        <span class="badge bg2">Онлайн</span>
+      </div>
+      <div class="tr">
+        <span>GPS <b id="hgps">43.2264°N 76.8612°E</b></span>
+        <span>ALT <b id="halt">120</b> м</span>
+        <span>Сигнал <b style="color:var(--green)">98%</b></span>
+        <b id="htm">--:--:--</b>
+      </div>
+    </header>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="nsec">Модули</div>
+      <div class="ni active" onclick="go('home')">○ Главная</div>
+      <div class="ni" onclick="go('map')">○ Карта</div>
+      <div class="ni" onclick="go('neural')">○ Нейросеть</div>
+      <div class="ni" onclick="go('telemetry')">○ Телеметрия</div>
+      <div class="ni" onclick="go('analysis')">○ Анализ</div>
+      <div class="ni" onclick="go('control')">○ Управление</div>
+      <div class="smeta">
+        <div class="fbet sm mb8"><span class="muted">АКБ</span><span class="mono up">82%</span></div>
+        <div class="pb"><div class="pf" style="width:82%;background:var(--green)"></div></div>
+        <div class="fbet sm mb8"><span class="muted">NN точность</span><span class="mono" style="color:var(--accent)">94.7%</span></div>
+        <div class="pb"><div class="pf" style="width:94.7%;background:var(--accent)"></div></div>
+      </div>
+    </nav>
+    <!-- Main content -->
+    <main class="main">
+      <!-- HOME -->
+      <div class="page active" id="page-home">
+        <div class="ph">
+          <div>
+            <h1>Главная</h1>
+            <p>Интеллектуальная система управления · БПЛА · ДЗЗ · Нейросети</p>
+          </div>
+        </div>
+        <div class="g4 mb20">
+          <div class="card"><div class="ct">Полётов</div><div class="sv">247</div><div class="sl2">всего сессий</div><div class="ss up">↑ +12 сегодня</div></div>
+          <div class="card"><div class="ct">Точность NN</div><div class="sv" id="macc">94.7%</div><div class="sl2">vs PID 88.4%</div><div class="ss up">↑ +6.3%</div></div>
+          <div class="card"><div class="ct">Покрытие</div><div class="sv">3.8 км²</div><div class="sl2">Сайран + буфер</div><div class="ss muted">14&nbsp;820 точек</div></div>
+          <div class="card"><div class="ct">Задержка</div><div class="sv">24 мс</div><div class="sl2">RT управление</div><div class="ss up">● Норма</div></div>
+        </div>
+        <div class="ga mb14">
+          <div class="card">
+            <div class="ct">Структура ИИС</div>
+            <div class="diag">
+              <div class="dbox dh" style="width:100%">Источники данных: БПЛА, ДЗЗ, ГИС</div>
+              <div class="darr">↓</div>
+              <div class="drow">
+                <div class="dbox dg">Сбор данных<div class="dtag">СБОР</div></div>
+                <div class="darr" style="padding:0 4px">→</div>
+                <div class="dbox do2">Хранение<div class="dtag">ХРАНЕНИЕ</div></div>
+                <div class="darr" style="padding:0 4px">→</div>
+                <div class="dbox">Анализ<div class="dtag">АНАЛИЗ</div></div>
+              </div>
+              <div style="display:flex;justify-content:space-around;width:100%;padding:0 8%">
+                <div class="darr">↓</div><div class="darr">↓</div><div class="darr">↓</div>
+              </div>
+              <div class="drow">
+                <div class="dbox dg">Визуализация<div class="dtag">КОНТРОЛЬ</div></div>
+                <div class="dbox do2">Адапт. обучение<div class="dtag">САМООБУЧЕНИЕ</div></div>
+                <div class="dbox dp">Интеграция<div class="dtag">FEEDBACK</div></div>
+              </div>
+              <div style="margin-top:10px;font-size:11px;color:var(--muted);font-family:var(--mono)">RS → CNN → Feature Map → ИСУ → БПЛА</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="ct">Статус модулей</div>
+            <div class="sr2"><span class="sm">CNN (RS)</span><div class="sr2r"><div class="pb" style="width:70px;margin:0"><div class="pf" style="width:67%;background:var(--green)"></div></div><span class="badge bg2">Активен</span></div></div>
+            <div class="sr2"><span class="sm">LSTM (траект.)</span><div class="sr2r"><div class="pb" style="width:70px;margin:0"><div class="pf" style="width:82%;background:var(--accent)"></div></div><span class="badge bg2">Активен</span></div></div>
+            <div class="sr2"><span class="sm">EKF (фильтр)</span><div class="sr2r"><div class="pb" style="width:70px;margin:0"><div class="pf" style="width:45%;background:var(--accent)"></div></div><span class="badge bg2">Активен</span></div></div>
+            <div class="sr2"><span class="sm">RL (автопилот)</span><div class="sr2r"><div class="pb" style="width:70px;margin:0"><div class="pf" style="width:91%;background:var(--amber)"></div></div><span class="badge ba">Обучение</span></div></div>
+            <div class="sr2"><span class="sm">GAN (синтез)</span><div class="sr2r"><div class="pb" style="width:70px;margin:0"><div class="pf" style="width:0%"></div></div><span class="badge bm">Ожидание</span></div></div>
+            <div class="div"></div>
+            <div class="ct">Модель БПЛА</div>
+            <div class="mono sm muted" style="line-height:2.2">
+              x<sub>t+1</sub> = x<sub>t</sub> + v·cos(ψ)<br>
+              y<sub>t+1</sub> = y<sub>t</sub> + v·sin(ψ)<br>
+              u = f(W·x + b)
+            </div>
+            <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+              <span class="badge bb">v = <span id="mv">12.4</span> м/с</span>
+              <span class="badge bb">ψ = <span id="mh">245</span>°</span>
+              <span class="badge ba">σ = 0.023</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ct">Конвейер данных</div>
+          <div style="display:flex;align-items:center;overflow-x:auto;padding:4px 0">
+            <div style="text-align:center;padding:0 16px;flex-shrink:0"><div style="font-size:20px">🛰</div><div class="sm" style="margin-top:4px">Спутник</div><div class="sm muted mono">Sentinel-2</div></div>
+            <div style="flex:1;height:1px;background:var(--border);min-width:20px"></div>
+            <div style="text-align:center;padding:0 16px;flex-shrink:0"><div style="font-size:20px">🧠</div><div class="sm" style="margin-top:4px">CNN</div><div class="sm muted mono">Features</div></div>
+            <div style="flex:1;height:1px;background:var(--border);min-width:20px"></div>
+            <div style="text-align:center;padding:0 16px;flex-shrink:0"><div style="font-size:20px">⟳</div><div class="sm" style="margin-top:4px">LSTM</div><div class="sm muted mono">Trajectory</div></div>
+            <div style="flex:1;height:1px;background:var(--border);min-width:20px"></div>
+            <div style="text-align:center;padding:0 16px;flex-shrink:0"><div style="font-size:20px">⚙</div><div class="sm" style="margin-top:4px">ИСУ</div><div class="sm muted mono">Core</div></div>
+            <div style="flex:1;height:1px;background:var(--border);min-width:20px"></div>
+            <div style="text-align:center;padding:0 16px;flex-shrink:0"><div style="font-size:20px">🚁</div><div class="sm" style="margin-top:4px">БПЛА</div><div class="sm mono up">Активен</div></div>
+          </div>
+        </div>
+      </div>
+      <!-- MAP -->
+      <div class="page" id="page-map">
+        <div class="ph">
+          <div>
+            <h1>Карта</h1>
+            <p>Спутниковый мониторинг · Озеро Сайран, Алматы</p>
+          </div>
+          <div class="phr">
+            <button class="btn" onclick="setLyr('satellite')">Спутник</button>
+            <button class="btn" onclick="setLyr('osm')">OSM</button>
+            <button class="btn" onclick="tglFly()">Старт / Стоп</button>
+          </div>
+        </div>
+        <div class="ga mb14">
+          <div id="map"></div>
+          <div>
+            <div class="card mb14">
+              <div class="ct">Телеметрия</div>
+              <table><tbody>
+                <tr><td class="muted sm">Широта</td><td class="mono sm" id="mlt">43.2264°N</td></tr>
+                <tr><td class="muted sm">Долгота</td><td class="mono sm" id="mln">76.8612°E</td></tr>
+                <tr><td class="muted sm">Высота</td><td class="mono sm" id="mal">120 м</td></tr>
+                <tr><td class="muted sm">Скорость</td><td class="mono sm" id="msp">12.4 м/с</td></tr>
+                <tr><td class="muted sm">Курс</td><td class="mono sm" id="mhd">245°</td></tr>
+                <tr><td class="muted sm">Батарея</td><td class="mono sm up">82%</td></tr>
+              </tbody></table>
+            </div>
+            <div class="card">
+              <div class="ct">LSTM — прогноз</div>
+              <div class="sm muted mb8">Следующие точки:</div>
+              <div id="lstmpts" style="display:flex;flex-direction:column;gap:4px"></div>
+              <div class="div"></div>
+              <div class="sm muted">Ошибка: <span class="up">±2.3 м</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="g3">
+          <div class="card"><div class="ct">Покрытие</div><table><tbody>
+            <tr><td class="muted sm">Сайран</td><td class="mono sm" style="color:var(--accent)">1.2 км²</td></tr>
+            <tr><td class="muted sm">Буфер</td><td class="mono sm up">2.6 км²</td></tr>
+            <tr><td class="muted sm">Итого</td><td class="mono sm">3.8 км²</td></tr>
+            <tr><td class="muted sm">Точек</td><td class="mono sm">14&nbsp;820</td></tr>
+          </tbody></table></div>
+          <div class="card"><div class="ct">GeoJSON</div><table><tbody>
+            <tr><td class="sm">sayran_boundary</td><td><span class="badge bg2">✓</span></td></tr>
+            <tr><td class="sm">flight_path_2024</td><td><span class="badge bg2">✓</span></td></tr>
+            <tr><td class="sm">obstacles</td><td><span class="badge ba">2 объекта</span></td></tr>
+          </tbody></table></div>
+          <div class="card"><div class="ct">Препятствия</div><table><tbody>
+            <tr><td class="sm">Башня A</td><td class="mono sm wa">45 м</td></tr>
+            <tr><td class="sm">Башня B</td><td class="mono sm wa">38 м</td></tr>
+            <tr><td class="sm">Буфер зона</td><td class="mono sm">50 м</td></tr>
+          </tbody></table></div>
+        </div>
+      </div>
+      <!-- NEURAL -->
+      <div class="page" id="page-neural">
+        <div class="ph">
+          <div>
+            <h1>Нейросеть</h1>
+            <p>LSTM + MLP + CNN · Обучение · Архитектура</p>
+          </div>
+          <div class="phr">
+            <span class="badge ba" id="tbadge">Обучение</span>
+            <button class="btn btnp" onclick="runTrain()">Запустить</button>
+          </div>
+        </div>
+        <div class="g2 mb14">
+          <div class="card">
+            <div class="ct">Архитектура LSTM + MLP</div>
+            <div class="nn" id="nnviz"></div>
+            <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+              <span class="badge bb">Вход: 6</span>
+              <span class="badge ba">LSTM: 64→32</span>
+              <span class="badge bg2">Выход: 3</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="ct">Loss / Val Loss</div>
+            <div class="ch"><canvas id="closs"></canvas></div>
+            <div class="mono sm muted" id="epline" style="margin-top:8px">EPOCH —/50</div>
+          </div>
+        </div>
+        <div class="g3 mb14">
+          <div class="card"><div class="ct">CNN — слои</div><table><tbody>
+            <tr><td class="muted sm">Input</td><td class="mono sm">128×128×4</td></tr>
+            <tr><td class="muted sm">Conv2D ×2</td><td class="mono sm">32 → 64</td></tr>
+            <tr><td class="muted sm">MaxPool ×2</td><td class="mono sm">2×2</td></tr>
+            <tr><td class="muted sm">Dense</td><td class="mono sm">256</td></tr>
+            <tr><td class="muted sm">Output</td><td class="mono sm">NDVI Class</td></tr>
+          </tbody></table></div>
+          <div class="card"><div class="ct">Параметры</div><table><tbody>
+            <tr><td class="muted sm">Оптимизатор</td><td class="mono sm" style="color:var(--accent)">Adam</td></tr>
+            <tr><td class="muted sm">LR</td><td class="mono sm">0.001</td></tr>
+            <tr><td class="muted sm">Batch</td><td class="mono sm">32</td></tr>
+            <tr><td class="muted sm">Epochs</td><td class="mono sm">50</td></tr>
+            <tr><td class="muted sm">Dropout</td><td class="mono sm">0.2</td></tr>
+          </tbody></table></div>
+          <div class="card"><div class="ct">Результаты</div>
+            <div class="sm muted mb8">Train Accuracy</div>
+            <div class="pb"><div class="pf" style="width:96.2%;background:var(--green)"></div></div>
+            <div class="mono mb14 up">96.2%</div>
+            <div class="sm muted mb8">Val Accuracy</div>
+            <div class="pb"><div class="pf" style="width:94.7%;background:var(--accent)"></div></div>
+            <div class="mono mb14" style="color:var(--accent)">94.7%</div>
+            <div class="sm muted mb8">Test Loss (MSE)</div>
+            <div class="pb"><div class="pf" style="width:8%;background:var(--amber)"></div></div>
+            <div class="mono wa">0.0031</div>
+          </div>
+        </div>
+        <div class="g2">
+          <div class="card"><div class="ct">Accuracy по эпохам</div><div class="ch"><canvas id="cacc"></canvas></div></div>
+          <div class="card"><div class="ct">Лог обучения</div><div class="log" id="nnlog"></div></div>
+        </div>
+      </div>
+      <!-- TELEMETRY -->
+      <div class="page" id="page-telemetry">
+        <div class="ph">
+          <div>
+            <h1>Телеметрия</h1>
+            <p>IMU · GPS · Барометр · EKF · Live 50&nbsp;Гц</p>
+          </div>
+        </div>
+        <div class="g4 mb14">
+          <div class="card"><div class="ct">Высота</div><div class="sv" id="talt">120 м</div></div>
+          <div class="card"><div class="ct">Скорость</div><div class="sv" id="tspd">12.4 м/с</div></div>
+          <div class="card"><div class="ct">Крен</div><div class="sv" id="troll">2.1°</div></div>
+          <div class="card"><div class="ct">Тангаж</div><div class="sv" id="tptch">−1.3°</div></div>
+        </div>
+        <div class="g2 mb14">
+          <div class="card"><div class="ct">Высота + EKF</div><div class="ch"><canvas id="calt"></canvas></div></div>
+          <div class="card"><div class="ct">Скорость по осям</div><div class="ch"><canvas id="cvel"></canvas></div></div>
+        </div>
+        <div class="g2 mb14">
+          <div class="card"><div class="ct">IMU — акселерометр</div><div class="ch"><canvas id="cimu"></canvas></div></div>
+          <div class="card"><div class="ct">GPS точность</div><div class="ch"><canvas id="cgps"></canvas></div></div>
+        </div>
+        <div class="card"><div class="ct">Поток телеметрии</div><div class="log" id="tllog"></div></div>
+      </div>
+      <!-- ANALYSIS -->
+      <div class="page" id="page-analysis">
+        <div class="ph">
+          <div><h1>Анализ</h1><p>NDVI · NN vs PID · Точность · Качество&nbsp;ДЗЗ</p></div>
+        </div>
+        <div class="g3 mb14">
+          <div class="card"><div class="ct">NN улучшение</div><div class="sv up">+6.3%</div><div class="sl2">точность vs PID</div><div class="ss muted">NN: 94.7% / PID: 88.4%</div></div>
+          <div class="card"><div class="ct">RL стабильность</div><div class="sv wa">+34%</div><div class="sl2">снижение колебаний</div><div class="ss muted">σ: 0.23 → 0.15</div></div>
+          <div class="card"><div class="ct">NDVI точность</div><div class="sv" style="color:var(--accent)">91.8%</div><div class="sl2">качество ДЗЗ</div><div class="ss muted">Sentinel-2 NIR</div></div>
+        </div>
+        <div class="g2 mb14">
+          <div class="card">
+            <div class="ct">NDVI — Сайран</div>
+            <div class="ndvi"><div class="ntick" style="left:62%">0.42</div></div>
+            <div class="fbet sm muted mono" style="margin-top:4px"><span>−1.0 вода</span><span>0.0</span><span>+1.0 лес</span></div>
+            <div class="div"></div>
+            <div class="arow"><div class="an sm">Открытая вода</div><div class="at"><div class="af" style="width:18%;background:var(--accent)"></div></div><div class="av sm">−0.18</div></div>
+            <div class="arow"><div class="an sm">Берег</div><div class="at"><div class="af" style="width:56%;background:#84cc16"></div></div><div class="av sm">0.28</div></div>
+            <div class="arow"><div class="an sm">Трава</div><div class="at"><div class="af" style="width:84%;background:var(--green)"></div></div><div class="av sm">0.42</div></div>
+            <div class="arow"><div class="an sm">Город</div><div class="at"><div class="af" style="width:10%;background:var(--muted)"></div></div><div class="av sm">0.05</div></div>
+            <div class="div"></div>
+            <div class="chsm"><canvas id="cndvi"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="ct">NN vs PID</div>
+            <div class="ch"><canvas id="cradar"></canvas></div>
+            <div class="div"></div>
+            <div class="sm" style="line-height:1.9">
+              NN точность выше на <span class="up">+6.3%</span>.<br>
+              RL стабильность лучше на <span class="wa">+34%</span>.<br>
+              NDVI: <span style="color:var(--accent)">91.8%</span> (Sentinel-2).
+            </div>
+          </div>
+        </div>
+        <div class="g2">
+          <div class="card">
+            <div class="ct">Точность по режимам</div>
+            <div class="arow" style="margin-top:10px"><div class="an sm">MLP базовый</div><div class="at"><div class="af" style="width:78.2%;background:var(--muted)"></div></div><div class="av sm">78.2%</div></div>
+            <div class="arow"><div class="an sm">PID классика</div><div class="at"><div class="af" style="width:88.4%;background:#f97316"></div></div><div class="av sm">88.4%</div></div>
+            <div class="arow"><div class="an sm">LSTM</div><div class="at"><div class="af" style="width:92.3%;background:var(--accent)"></div></div><div class="av sm">92.3%</div></div>
+            <div class="arow"><div class="an sm">EKF + NN</div><div class="at"><div class="af" style="width:93.1%;background:var(--accent)"></div></div><div class="av sm">93.1%</div></div>
+            <div class="arow"><div class="an sm">RL автопилот</div><div class="at"><div class="af" style="width:94.7%;background:var(--green)"></div></div><div class="av sm">94.7%</div></div>
+          </div>
+          <div class="card">
+            <div class="ct">Метрики качества</div>
+            <table>
+              <thead><tr><th>Метрика</th><th>Значение</th><th>Оценка</th></tr></thead>
+              <tbody>
+                <tr><td>RMSE траектории</td><td class="mono">2.34 м</td><td class="up">Отлично</td></tr>
+                <tr><td>MAE высоты</td><td class="mono">0.82 м</td><td class="up">Отлично</td></tr>
+                <tr><td>Задержка</td><td class="mono">24 мс</td><td class="up">Отлично</td></tr>
+                <tr><td>F1 Score CNN</td><td class="mono">0.921</td><td class="up">Отлично</td></tr>
+                <tr><td>NDVI MAE</td><td class="mono">0.034</td><td class="up">Отлично</td></tr>
+                <tr><td>RL Reward</td><td class="mono">892/1000</td><td class="wa">Хорошо</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <!-- CONTROL -->
+      <div class="page" id="page-control">
+        <div class="ph">
+          <div><h1>Управление</h1><p>Ручной · Автопилот · RL агент</p></div>
+          <div class="phr">
+            <span class="badge bg2" id="mbadge">Автопилот</span>
+            <button class="btn btnd" onclick="eStop()">⚠ Стоп</button>
+          </div>
+        </div>
+        <div class="ga mb14">
+          <div>
+            <div class="g3 mb14">
+              <div class="card"><div class="ct">Режим</div>
+                <div style="display:flex;flex-direction:column;gap:7px;margin-top:4px">
+                  <button class="btn btnp" onclick="sMode('auto','Автопилот')">Автопилот</button>
+                  <button class="btn" onclick="sMode('manual','Ручной')">Ручной</button>
+                  <button class="btn" onclick="sMode('rl','RL Агент')">RL Агент</button>
+                </div>
+              </div>
+              <div class="card"><div class="ct">Маршрут</div>
+                <div style="display:flex;flex-direction:column;gap:7px;margin-top:4px">
+                  <button class="btn" onclick="cmd2('TAKEOFF')">▲ Взлёт</button>
+                  <button class="btn" onclick="cmd2('HOVER')">◼ Зависание</button>
+                  <button class="btn" onclick="cmd2('LAND')">▼ Посадка</button>
+                </div>
+              </div>
+              <div class="card"><div class="ct">Миссия</div>
+                <table><tbody>
+                  <tr><td class="muted sm">Точек</td><td class="mono sm">8</td></tr>
+                  <tr><td class="muted sm">Дистанция</td><td class="mono sm">4.2 км</td></tr>
+                  <tr><td class="muted sm">Время</td><td class="mono sm">~22&nbsp;мин</td></tr>
+                  <tr><td class="muted sm">АКБ расход</td><td class="mono sm wa">45%</td></tr>
+                </tbody></table>
+                <button class="btn btnp" style="width:100%;margin-top:10px" onclick="cmd2('MISSION')">Старт</button>
+              </div>
+            </div>
+            <div class="card mb14">
+              <div class="ct">Параметры полёта</div>
+              <div class="srow"><div class="slb">Высота (м)</div><input type="range" min="20" max="400" value="120" oninput="sv2(this,'svalt')"><div class="slv" id="svalt">120</div></div>
+              <div class="srow"><div class="slb">Скорость (м/с)</div><input type="range" min="1" max="20" value="12" oninput="sv2(this,'svspd')"><div class="slv" id="svspd">12</div></div>
+              <div class="srow"><div class="slb">Курс (°)</div><input type="range" min="0" max="359" value="245" oninput="sv2(this,'svhdg')"><div class="slv" id="svhdg">245</div></div>
+              <div class="srow"><div class="slb">Крен (°)</div><input type="range" min="-30" max="30" value="0" oninput="sv2(this,'svroll')"><div class="slv" id="svroll">0</div></div>
+            </div>
+            <div class="card">
+              <div class="ct">RL параметры</div>
+              <div class="srow"><div class="slb">Learning Rate</div><input type="range" min="1" max="100" value="10" oninput="svf(this,'svlr',10000)"><div class="slv" id="svlr">0.001</div></div>
+              <div class="srow"><div class="slb">Epsilon (ε)</div><input type="range" min="1" max="100" value="15" oninput="svf(this,'sveps',100)"><div class="slv" id="sveps">0.15</div></div>
+              <div class="srow"><div class="slb">Gamma (γ)</div><input type="range" min="50" max="99" value="95" oninput="svf(this,'svgam',100)"><div class="slv" id="svgam">0.95</div></div>
+            </div>
+          </div>
+          <div>
+            <div class="card mb14" style="text-align:center">
+              <div class="ct">Джойстик</div>
+              <div class="joy" id="joy"><div class="joyd" id="joyd"></div></div>
+              <div class="mono sm muted" style="margin-top:10px">X: <span id="jx">0.00</span> &nbsp; Y: <span id="jy">0.00</span></div>
+            </div>
+            <div class="card"><div class="ct">Лог команд</div><div class="log" id="cmdlog"></div></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <!-- Project scripts -->
+  <script src="assets/js/ui.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/map.js"></script>
+  <script src="assets/js/neural.js"></script>
+  <script src="assets/js/telemetry.js"></script>
+  <script src="assets/js/analysis.js"></script>
+  <script src="assets/js/control.js"></script>
+</body>
+</html>
